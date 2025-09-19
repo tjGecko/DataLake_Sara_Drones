@@ -136,7 +136,7 @@ Current working directory: {Path.cwd()}
             """)
             sys.exit(1)
         
-        script_name = Path(__file__).name
+        script_name = str(Path(__file__).resolve())
         
         # Load configuration
         print(f"Loading configuration from: {config_path}")

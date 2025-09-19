@@ -31,4 +31,4 @@ wav_filtering:
 output:
   registry_filename: "clean_wav_registry.json"
   include_file_metadata: true
-  default_snr_db: 20.0
+  default_snr_db: 7.0

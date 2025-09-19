@@ -80,7 +80,7 @@ class CleanWavEntry(BaseModel):
     drone_type: DroneType = Field(..., description="Type of drone in the recording")
     file_size: int = Field(..., description="Size of the file in bytes")
     modified_time: float = Field(..., description="Last modified timestamp of the file")
-    snr_db: float = Field(default=20.0, description="Signal-to-noise ratio in decibels")
+    snr_db: float = Field(default=7.0, description="Signal-to-noise ratio in decibels")
     
     @field_validator('file_path', mode='before')
     @classmethod
