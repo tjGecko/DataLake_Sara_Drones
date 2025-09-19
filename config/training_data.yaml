@@ -1,0 +1,34 @@
+# Training Data Configuration for Sara Al-Emadi Drones Project
+# Adapted for Windows environment
+
+data_lake:
+  # UPDATE THIS PATH to point to your local drone audio dataset
+  # Example Windows paths:
+  # - "C:/Users/YourUsername/Documents/DroneAudioDataset/Binary_Drone_Audio/yes_drone/"
+  # - "D:/data/drone_audio/yes_drone/"
+  root_dir: "C:/temp/drone_audio_data/yes_drone/"
+  root_dir_info: "Location of all data assets: https://github.com/saraalemadi/DroneAudioDataset"
+  
+training_data_creation:
+  sliding_window_size: 4096
+  sliding_window_hop_size: 16
+  sliding_window_hop_size_info: "Number of samples to skip between sliding windows => 0.001 seconds (at 16kHz)"
+  # UPDATE THIS PATH to point to your temporary directory
+  tmp_dir: "C:/temp/drone_audio_processing/"
+
+# Additional configuration for this project
+project_info:
+  name: "Sara Al-Emadi Drones Detection"
+  description: "Acoustic drone detection using VAE techniques"
+  version: "1.0.0"
+  
+# Filter terms for WAV file processing
+wav_filtering:
+  filter_terms: ["bebop", "mambo"]  # Note: "membo" will be auto-corrected to "mambo"
+  file_extensions: [".wav", ".WAV"]
+  
+# Output settings
+output:
+  registry_filename: "clean_wav_registry.json"
+  include_file_metadata: true
+  default_snr_db: 20.0
