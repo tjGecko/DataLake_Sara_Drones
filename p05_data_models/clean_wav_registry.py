@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 import warnings
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class DroneType(str, Enum):
@@ -74,11 +74,29 @@ def normalize_drone_type(value: Union[str, DroneType]) -> DroneType:
 
 class CleanWavEntry(BaseModel):
     """Represents a single entry in the clean WAV registry."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     file_path: Path = Field(..., description="Absolute path to the WAV file")
     drone_type: DroneType = Field(..., description="Type of drone in the recording")
     file_size: int = Field(..., description="Size of the file in bytes")
     modified_time: float = Field(..., description="Last modified timestamp of the file")
     snr_db: float = Field(default=20.0, description="Signal-to-noise ratio in decibels")
+    
+    @field_validator('file_path', mode='before')
+    @classmethod
+    def validate_file_path(cls, v):
+        """Ensure file_path is always an absolute path for future reference."""
+        if isinstance(v, str):
+            path = Path(v)
+        elif isinstance(v, Path):
+            path = v
+        else:
+            raise ValueError(f"file_path must be a string or Path object, got {type(v)}")
+        
+        # Convert to absolute path and resolve any symbolic links
+        absolute_path = path.expanduser().resolve()
+        
+        return absolute_path
     
     @field_validator('drone_type', mode='before')
     @classmethod
@@ -89,11 +107,29 @@ class CleanWavEntry(BaseModel):
 
 class RegistryHeader(BaseModel):
     """Metadata about the registry creation."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     created_by: str = Field(..., description="Script that generated this registry")
     created_at: datetime = Field(default_factory=datetime.now, description="When the registry was created")
     description: str = Field(default="Clean WAV file registry", description="Purpose of this registry")
     filter_terms: List[str] = Field(..., description="Terms used to filter the WAV files")
-    root_dir: Path = Field(..., description="Root directory that the file paths are relative to")
+    root_dir: Path = Field(..., description="Absolute root directory path for reference")
+    
+    @field_validator('root_dir', mode='before')
+    @classmethod
+    def validate_root_dir(cls, v):
+        """Ensure root_dir is always an absolute path for future reference."""
+        if isinstance(v, str):
+            path = Path(v)
+        elif isinstance(v, Path):
+            path = v
+        else:
+            raise ValueError(f"root_dir must be a string or Path object, got {type(v)}")
+        
+        # Convert to absolute path and resolve any symbolic links
+        absolute_path = path.expanduser().resolve()
+        
+        return absolute_path
 
 
 class CleanWavRegistry(BaseModel):
@@ -154,13 +190,25 @@ class CleanWavRegistry(BaseModel):
         """Save the registry to a JSON file."""
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(file_path, 'w') as f:
-            f.write(self.model_dump_json(indent=2, exclude_none=True))
+            # Convert Path objects to strings for JSON serialization
+            data = self.model_dump(mode='json')
+            # Convert Path objects in the dumped data
+            data['header']['root_dir'] = str(self.header.root_dir)
+            for entry in data['entries']:
+                entry['file_path'] = str(Path(entry['file_path']))
+            
+            import json
+            f.write(json.dumps(data, indent=2))
 
     @classmethod
     def load_from_file(cls, file_path: Path) -> 'CleanWavRegistry':
         """Load a registry from a JSON file."""
+        import json
         with open(file_path, 'r') as f:
-            return cls.model_validate_json(f.read())
+            data = json.load(f)
+        
+        # The field validators will automatically convert string paths back to Path objects
+        return cls.model_validate(data)
 
     def get_legacy_entries_corrected(self) -> int:
         """
